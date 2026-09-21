@@ -263,3 +263,12 @@ input, select { height: 34px; padding: 0 10px; }textarea { padding: 9px 10px; re
 .website-badge-muted { color: var(--warning); background: color-mix(in srgb, var(--warning) 12%, transparent); }
 .excluded-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; margin: 10px 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; color: var(--muted-foreground); background: rgba(255,255,255,.025); font-size: 12px; cursor: pointer; }
 .excluded-toggle:hover, .excluded-toggle-active { color: var(--foreground); border-color: var(--border-strong); background: rgba(255,255,255,.05); }
+
+/* Website cleanup and dependent location controls */
+.cleanup-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; padding: 0; overflow: hidden; }
+.cleanup-summary > div { display: grid; gap: 8px; padding: 18px 20px; background: rgba(255,255,255,.025); }
+.cleanup-summary strong { font-size: 24px; letter-spacing: -.04em; }
+@media (max-width: 760px) { .cleanup-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.finder-controls label { min-width: 0; }
+.finder-controls select, .finder-controls input { min-width: 0; }
+.muted-copy { color: var(--muted-foreground); font-size: 11px; }
