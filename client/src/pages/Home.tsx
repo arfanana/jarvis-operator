@@ -101,19 +101,53 @@ function FindLeads() {
   const [error, setError] = useState("");
   const [addedIds, setAddedIds] = useState<string[]>(() => getSavedLeads().map((lead) => lead.id));
   const [sort, setSort] = useState("Probability");
-  const markers = useMemo(() => [] as google.maps.Marker[], []);
+  const markersRef = useRef<google.maps.Marker[]>([]);
   const areas = cityAreas[city] ?? [];
+  const clearMarkers = () => {
+    markersRef.current.forEach((marker) => marker.setMap(null));
+    markersRef.current = [];
+  };
+  useEffect(() => () => clearMarkers(), []);
   const addLead = (lead: Lead) => { if (duplicateOf(lead)) return toast("Possible duplicate detected — review the existing lead first"); saveLead(lead); setAddedIds((ids) => ids.includes(lead.id) ? ids : [...ids, lead.id]); toast.success(`${lead.business} added to New`); };
   const addAll = () => { const fresh = results.filter((lead) => !duplicateOf(lead)); const duplicates = results.length - fresh.length; fresh.forEach((lead) => saveLead(lead)); setAddedIds((ids) => Array.from(new Set([...ids, ...fresh.map((lead) => lead.id)]))); toast.success(`${fresh.length} businesses added${duplicates ? ` · ${duplicates} duplicates skipped` : ""}`); };
   const search = async () => {
-    if (!map || !city || !area || !query.trim()) return;
-    setSearching(true); setError(""); setSearched(true); setResults([]);
+    if (!city || !area || !query.trim()) return;
+    if (!map) {
+      setError("Map is still loading. Please wait a moment and try again.");
+      return;
+    }
+    setSearching(true); setError(""); setSearched(true); setResults([]); clearMarkers();
     try {
       const geocoder = new google.maps.Geocoder();
       const geocode = await new Promise<google.maps.GeocoderResult>((resolve, reject) => geocoder.geocode({ address: `${area}, ${city}, India` }, (items, status) => items?.[0] && status === "OK" ? resolve(items[0]) : reject(new Error("Area not found"))));
-      const center = geocode.geometry.location; map.setCenter(center); map.setZoom(13); const service = new google.maps.places.PlacesService(map); const found: google.maps.places.PlaceResult[] = []; let nextPage: google.maps.places.PlaceSearchPagination | null | undefined;
-      do { const batch = await new Promise<{ items: google.maps.places.PlaceResult[]; pagination?: google.maps.places.PlaceSearchPagination | null }>((resolve, reject) => service.textSearch({ query: `${query} near ${area}, ${city}, India`, location: center, radius: Number(radius) }, (items, status, pagination) => status === google.maps.places.PlacesServiceStatus.OK ? resolve({ items: items ?? [], pagination }) : status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS ? resolve({ items: [], pagination }) : reject(new Error("Places search failed.")))); found.push(...batch.items); nextPage = batch.pagination; if (nextPage?.hasNextPage) await new Promise((resolve) => window.setTimeout(resolve, 2200)); } while (nextPage?.hasNextPage);
-      const mapped = found.map((place, index) => { const probability = probabilityFor(place.rating, place.user_ratings_total); const lead: Lead = { id: place.place_id ?? `place-${index}`, business: place.name ?? "Unnamed business", niche: query, location: place.formatted_address ?? `${area}, ${city}`, score: scoreFor(probability), probability, contact: "Not enriched", lastTouch: "Found just now", value: 0, initials: (place.name ?? "B").split(" ").slice(0, 2).map((word) => word[0]).join("").toUpperCase(), address: place.formatted_address, placeId: place.place_id, stage: "New", followUpDate: todayISO(), replyStatus: "none", source: "Google Places" }; if (place.geometry?.location) markers.push(new google.maps.Marker({ map, position: place.geometry.location, title: lead.business })); return lead; });
+      const center = geocode.geometry.location; map.setCenter(center); map.setZoom(13); const service = new google.maps.places.PlacesService(map); const found: google.maps.places.PlaceResult[] = [];
+      await new Promise<void>((resolve, reject) => {
+        const callback = (items: google.maps.places.PlaceResult[] | null, status: google.maps.places.PlacesServiceStatus, pagination: google.maps.places.PlaceSearchPagination | null) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            found.push(...(items ?? []));
+            if (pagination?.hasNextPage) {
+              window.setTimeout(() => pagination.nextPage(), 1200);
+              return;
+            }
+            resolve();
+            return;
+          }
+          if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+            resolve();
+            return;
+          }
+          reject(new Error(`Places search failed (${status}).`));
+        };
+        service.textSearch({ query: `${query} near ${area}, ${city}, India`, location: center, radius: Number(radius) }, callback);
+      });
+      const seen = new Set<string>();
+      const deduped = found.filter((place, index) => {
+        const key = place.place_id ?? `${place.name ?? "unknown"}-${index}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      const mapped = deduped.map((place, index) => { const probability = probabilityFor(place.rating, place.user_ratings_total); const lead: Lead = { id: place.place_id ?? `place-${index}`, business: place.name ?? "Unnamed business", niche: query, location: place.formatted_address ?? `${area}, ${city}`, score: scoreFor(probability), probability, contact: "Not enriched", lastTouch: "Found just now", value: 0, initials: (place.name ?? "B").split(" ").slice(0, 2).map((word) => word[0]).join("").toUpperCase(), address: place.formatted_address, placeId: place.place_id, stage: "New", followUpDate: todayISO(), replyStatus: "none", source: "Google Places" }; if (place.geometry?.location) markersRef.current.push(new google.maps.Marker({ map, position: place.geometry.location, title: lead.business })); return lead; });
       setResults(mapped); if (!mapped.length) setError("No businesses found in this area.");
     } catch (err) { setError(err instanceof Error ? err.message : "Search failed. Try another area."); } finally { setSearching(false); }
   };
