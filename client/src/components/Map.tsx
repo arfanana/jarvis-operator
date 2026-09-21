@@ -36,7 +36,7 @@
  * 🧭 GEOCODER (from `geocoding` library)
  * - Standalone service; manually apply results to map.
  * const geocoder = new google.maps.Geocoder();
- * geocoder.geocode({ address: "New York" }, (results, status) => {
+ * geocoder.geocode({ address: "Hyderabad, Telangana" }, (results, status) => {
  *   if (status === "OK" && results[0]) {
  *     map.setCenter(results[0].geometry.location);
  *     new google.maps.marker.AdvancedMarkerElement({
