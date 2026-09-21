@@ -253,3 +253,13 @@ input, select { height: 34px; padding: 0 10px; }textarea { padding: 9px 10px; re
 .drawer-help { margin: 7px 0 0; color: var(--foreground-muted); font-size: 12px; line-height: 18px; }
 .ai-provider-note { margin: 8px 0; padding: 7px 9px; color: var(--foreground-muted); border: 1px solid var(--border); border-radius: 5px; background: var(--surface-elevated); }
 .ai-provider-note svg { color: var(--success); }
+
+/* Lead discovery performance and verification */
+.virtual-results { overflow-y: auto; contain: strict; padding: 4px 0; }
+.virtual-result-row { margin: 0 0 8px; }
+.website-badge { display: inline-flex; width: fit-content; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 7px; font-size: 10px; font-weight: 650; letter-spacing: .01em; }
+.website-badge-clear { color: var(--success); background: color-mix(in srgb, var(--success) 12%, transparent); }
+.website-badge-live { color: var(--info); background: color-mix(in srgb, var(--info) 12%, transparent); }
+.website-badge-muted { color: var(--warning); background: color-mix(in srgb, var(--warning) 12%, transparent); }
+.excluded-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; margin: 10px 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; color: var(--muted-foreground); background: rgba(255,255,255,.025); font-size: 12px; cursor: pointer; }
+.excluded-toggle:hover, .excluded-toggle-active { color: var(--foreground); border-color: var(--border-strong); background: rgba(255,255,255,.05); }

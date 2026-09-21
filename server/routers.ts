@@ -69,6 +69,24 @@ async function sendThroughProvider(to: string, subject: string, body: string) {
 
 export const appRouter = router({
   system: systemRouter,
+  leads: router({
+    verifyWebsite: publicProcedure.input(z.object({ url: z.string().url() })).mutation(async ({ input }) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+      try {
+        let response = await fetch(input.url, { method: "HEAD", redirect: "follow", signal: controller.signal });
+        if (!response.ok || response.status === 405) {
+          response = await fetch(input.url, { method: "GET", redirect: "follow", signal: controller.signal });
+        }
+        const reachable = response.ok;
+        return { status: reachable ? "functional" as const : "unreachable" as const, httpStatus: response.status, confidence: reachable ? 99 : 82 };
+      } catch {
+        return { status: "unknown" as const, httpStatus: null, confidence: 55 };
+      } finally {
+        clearTimeout(timeout);
+      }
+    }),
+  }),
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
